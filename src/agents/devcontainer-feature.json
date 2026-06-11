@@ -1,8 +1,8 @@
 {
   "id": "agents",
-  "version": "1.0.0",
-  "name": "AI Coding Agents (Codex + Claude Code)",
-  "description": "Installs the OpenAI Codex CLI and Claude Code so every dev container ships with both agents pre-installed.",
+  "version": "1.1.0",
+  "name": "AI Coding Agents (Codex + Claude Code + GitHub CLI)",
+  "description": "Installs the OpenAI Codex CLI, Claude Code, and the GitHub CLI so every dev container ships with the agents pre-installed. Persists the `gh` login across rebuilds via a named volume.",
   "documentationURL": "https://github.com/rocicorp/devcontainer-features/tree/main/src/agents",
   "options": {
     "codexVersion": {
@@ -12,7 +12,16 @@
     }
   },
   "dependsOn": {
-    "ghcr.io/anthropics/devcontainer-features/claude-code:1": {}
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
+  "mounts": [
+    {
+      "source": "devcontainer-gh-config",
+      "target": "/home/node/.config/gh",
+      "type": "volume"
+    }
+  ],
+  "postCreateCommand": "sudo chown -R node:node /home/node/.config/gh 2>/dev/null || true",
   "installsAfter": ["ghcr.io/devcontainers/features/node"]
 }
