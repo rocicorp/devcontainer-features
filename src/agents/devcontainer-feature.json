@@ -1,0 +1,18 @@
+{
+  "id": "agents",
+  "version": "1.0.0",
+  "name": "AI Coding Agents (Codex + Claude Code)",
+  "description": "Installs the OpenAI Codex CLI and Claude Code so every dev container ships with both agents pre-installed.",
+  "documentationURL": "https://github.com/rocicorp/devcontainer-features/tree/main/src/agents",
+  "options": {
+    "codexVersion": {
+      "type": "string",
+      "default": "0.139.0",
+      "description": "Version of @openai/codex to install (npm dist-tag or exact version). Pin an exact version for reproducibility."
+    }
+  },
+  "dependsOn": {
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1": {}
+  },
+  "installsAfter": ["ghcr.io/devcontainers/features/node"]
+}
