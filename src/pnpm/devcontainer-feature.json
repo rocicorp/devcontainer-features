@@ -7,8 +7,8 @@
   "options": {
     "removeNpm": {
       "type": "boolean",
-      "default": false,
-      "description": "Remove the npm and npx binaries after setup to enforce pnpm-only usage."
+      "default": true,
+      "description": "Remove the npm and npx binaries after setup to enforce pnpm-only usage. Set to false to keep npm available."
     }
   },
   "postCreateCommand": "/usr/local/share/rocicorp-pnpm/post-create.sh",

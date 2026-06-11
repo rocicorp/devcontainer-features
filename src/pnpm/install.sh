@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Option (booleans arrive as the strings "true"/"false").
-REMOVE_NPM="${REMOVENPM:-false}"
+REMOVE_NPM="${REMOVENPM:-true}"
 
 if ! command -v corepack >/dev/null 2>&1; then
   echo "ERROR: corepack not found. This feature needs a Node.js install (base image or node feature)." >&2

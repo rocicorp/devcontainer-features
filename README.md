@@ -50,12 +50,12 @@ Sets up [pnpm](https://pnpm.io) via [Corepack](https://github.com/nodejs/corepac
 - Runs `corepack enable` (adds the `pnpm` shim) at build time.
 - At `postCreate`, runs `corepack install` to pin the pnpm version from the workspace's
   `package.json` `packageManager` field.
-- With `removeNpm: true`, removes the `npm`/`npx` binaries (after build-time installs have
-  run) to enforce pnpm-only usage.
+- Removes the `npm`/`npx` binaries (after build-time installs have run) to enforce
+  pnpm-only usage. This is the default; set `removeNpm: false` to keep npm available.
 
 ```jsonc
 "features": {
-  "ghcr.io/rocicorp/devcontainer-features/pnpm:1": { "removeNpm": true }
+  "ghcr.io/rocicorp/devcontainer-features/pnpm:1": {}
 }
 ```
 
