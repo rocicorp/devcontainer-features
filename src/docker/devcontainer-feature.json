@@ -1,11 +1,13 @@
 {
   "id": "docker",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "name": "Docker (Docker-in-Docker, testcontainers-ready)",
   "description": "Provides a self-contained Docker daemon inside the container via the official Docker-in-Docker feature. Picked over docker-outside-of-docker so testcontainers (bind mounts + container networking) works without depending on a host socket, which keeps it portable across Codespaces, CI, and local Docker/Podman/OrbStack hosts.",
   "documentationURL": "https://github.com/rocicorp/devcontainer-features/tree/main/src/docker",
   "dependsOn": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": false
+    }
   },
   "installsAfter": ["ghcr.io/devcontainers/features/node"]
 }

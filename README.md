@@ -73,6 +73,9 @@ integration tests) — runs inside the dev container.
   [`ghcr.io/devcontainers/features/docker-in-docker`](https://github.com/devcontainers/features/tree/main/src/docker-in-docker)
   feature via `dependsOn`, which installs the Docker engine, runs a daemon **inside** the
   container, and adds the remote user to the `docker` group (no `sudo` needed).
+- Pins `"moby": false` so the upstream feature installs Docker CE from Docker's own apt
+  repo instead of Microsoft's `moby-*` packages, which don't exist on Debian trixie
+  (the base of current `javascript-node` images) and fail the build.
 - Uses Docker-**in**-Docker rather than docker-outside-of-docker on purpose: testcontainers
   relies on bind mounts and container-to-container networking, both of which break under the
   host-socket approach (path translation) and aren't available in every environment
