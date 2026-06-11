@@ -11,6 +11,19 @@ Installs the AI coding agents we standardize on:
 - **OpenAI Codex CLI** (`@openai/codex`, version pinned via the `codexVersion` option)
 - **Claude Code** (pulled in automatically via `dependsOn` on the official
   `ghcr.io/anthropics/devcontainer-features/claude-code` feature)
+- **GitHub CLI** (`gh`, via `dependsOn` on the official
+  `ghcr.io/devcontainers/features/github-cli` feature)
+
+### Persistent `gh` login
+
+The feature mounts a named volume (`devcontainer-gh-config`) at
+`/home/node/.config/gh`, so a `gh auth login` survives container **rebuilds** — you log
+in once instead of after every rebuild. A `postCreateCommand` `chown`s the volume so the
+`node` user can write to it.
+
+> The volume is **shared across all repos** that use this feature (gh auth is account-level,
+> not repo-level), so logging in from one container carries over to the others. The mount
+> path assumes the `node` remote user (the base image we standardize on).
 
 ### Usage
 
@@ -25,8 +38,8 @@ In any repo's `.devcontainer/devcontainer.json`:
 }
 ```
 
-This single line replaces both the official `claude-code` feature line *and* the inline
-`npm install -g @openai/codex` in `post-create.sh`.
+This single line replaces the official `claude-code` and `github-cli` feature lines *and*
+the inline `npm install -g @openai/codex` in `post-create.sh`.
 
 ### Updating the agent versions everywhere
 
