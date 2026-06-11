@@ -1,0 +1,16 @@
+{
+  "id": "pnpm",
+  "version": "1.0.0",
+  "name": "pnpm via Corepack",
+  "description": "Enables Corepack and installs the pnpm version pinned in the workspace's package.json `packageManager` field. Optionally removes npm/npx to enforce pnpm.",
+  "documentationURL": "https://github.com/rocicorp/devcontainer-features/tree/main/src/pnpm",
+  "options": {
+    "removeNpm": {
+      "type": "boolean",
+      "default": true,
+      "description": "Remove the npm and npx binaries after setup to enforce pnpm-only usage. Set to false to keep npm available."
+    }
+  },
+  "postCreateCommand": "/usr/local/share/rocicorp-pnpm/post-create.sh",
+  "installsAfter": ["ghcr.io/devcontainers/features/node"]
+}
