@@ -63,6 +63,30 @@ This replaces the corepack/pnpm/npm-removal block that otherwise lives in each r
 `post-create.sh`. Combined with `agents`, a consumer repo's `devcontainer.json` needs no
 lifecycle scripts at all.
 
+## `docker`
+
+Gives the container a working Docker daemon so tooling that shells out to Docker — most
+notably [testcontainers](https://testcontainers.com) (used by the `zero-cache` Postgres
+integration tests) — runs inside the dev container.
+
+- Pulls in the official
+  [`ghcr.io/devcontainers/features/docker-in-docker`](https://github.com/devcontainers/features/tree/main/src/docker-in-docker)
+  feature via `dependsOn`, which installs the Docker engine, runs a daemon **inside** the
+  container, and adds the remote user to the `docker` group (no `sudo` needed).
+- Uses Docker-**in**-Docker rather than docker-outside-of-docker on purpose: testcontainers
+  relies on bind mounts and container-to-container networking, both of which break under the
+  host-socket approach (path translation) and aren't available in every environment
+  (Codespaces, CI). A self-contained daemon "just works" everywhere.
+
+```jsonc
+"features": {
+  "ghcr.io/rocicorp/devcontainer-features/docker:1": {}
+}
+```
+
+This replaces a per-repo `docker-in-docker` feature line and centralizes the pinned version
+alongside the other rocicorp features.
+
 ## Updating the feature versions everywhere
 
 1. Bump `codexVersion` default (and/or the `dependsOn` claude-code pin) in
