@@ -13,15 +13,22 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        feature:
+          - agents
+          - docker
+          - pnpm
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
       - name: Install devcontainer CLI
         run: npm install -g @devcontainers/cli
 
-      - name: Test agents feature
+      - name: Test ${{ matrix.feature }} feature
         run: |
           devcontainer features test \
-            --features agents \
+            --features ${{ matrix.feature }} \
             --base-image mcr.microsoft.com/devcontainers/javascript-node:24 \
             .
