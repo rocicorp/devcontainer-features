@@ -13,8 +13,8 @@ Installs the AI coding agents we standardize on:
   `ghcr.io/anthropics/devcontainer-features/claude-code` feature)
 - **GitHub CLI** (`gh`, via `dependsOn` on the official
   `ghcr.io/devcontainers/features/github-cli` feature)
-- **1Password CLI** (`op`, installed from 1Password's apt repo) — used to inject a
-  GitHub token for `gh` without persisting credentials on the host
+- **1Password CLI** (`op`, installed from 1Password's apt repo) — so `gh` can authenticate
+  from a 1Password-sourced token instead of persisting credentials on the host
 
 ### Persistent Claude login
 
@@ -31,19 +31,15 @@ the `node` user can write to it.
 
 Earlier versions persisted the `gh` login in a `devcontainer-gh-config` volume, which left
 a long-lived GitHub token sitting on the host indefinitely. As of **v2.0.0** that volume is
-gone. `gh` authenticates from a `GH_TOKEN`/`GITHUB_TOKEN` **environment variable** instead,
-sourced from 1Password — nothing is written to the host.
+gone. `gh` authenticates from a `GITHUB_TOKEN` **environment variable** instead, resolved
+from 1Password on your host and forwarded into the container — nothing is written to the
+host.
 
-The one fact that makes this non-obvious: **1Password's desktop-app integration (Touch ID
-unlock) does _not_ work inside a container.** The `op` CLI's app integration talks to the
-desktop app over a host-only socket the container can't reach. So the question is always
-*"where does `op` actually run?"* — and that splits into two patterns.
-
-#### Pattern A — Local dev container: resolve on the host, forward the token in (recommended)
-
-Your **host** has the 1Password app + Touch ID. Resolve the GitHub token there and forward
-just that token into the container. `gh` reads `GITHUB_TOKEN` directly, so you do **not**
-set `ghTokenSecretRef` — the feature's in-container `op` step stays dormant.
+The reason it's forwarded from the host rather than resolved inside the container:
+**1Password's desktop-app integration (Touch ID unlock) does _not_ work inside a
+container.** The `op` CLI's app integration talks to the desktop app over a host-only socket
+the container can't reach. So `op` runs on your **host**, and only the resulting token
+crosses into the container — `gh` reads `GITHUB_TOKEN` directly.
 
 ```jsonc
 "features": {
@@ -122,29 +118,7 @@ One-time **host** setup (the part that tripped us up — note the gotchas):
 > nothing is persisted on a host volume. If `GITHUB_TOKEN` isn't set, `gh` is simply
 > unauthenticated — a clean fallback; run `gh auth login` manually if you like.
 
-#### Pattern B — Headless (Codespaces / CI): `op read` inside the container
-
-When there's no desktop app to lean on, run `op` inside the container with a
-[service-account token][service-account]. Set `ghTokenSecretRef` and forward
-`OP_SERVICE_ACCOUNT_TOKEN`:
-
-```jsonc
-"features": {
-  "ghcr.io/rocicorp/devcontainer-features/agents:2": {
-    "ghTokenSecretRef": "op://Engineering/GitHub CLI/token"
-  }
-},
-"remoteEnv": { "OP_SERVICE_ACCOUNT_TOKEN": "${localEnv:OP_SERVICE_ACCOUNT_TOKEN}" }
-```
-
-On each login shell, `/etc/profile.d/10-gh-op-token.sh` runs `op read "$ghTokenSecretRef"`
-and exports the result as `GH_TOKEN`. If `ghTokenSecretRef` is empty, `op` is
-unauthenticated, or the reference can't be resolved, the snippet is a no-op and you fall
-back to `gh auth login` / a plain `GITHUB_TOKEN`. Scope the service account to **only** the
-GitHub-token item, since that token lives in the container env.
-
 [secret-ref]: https://developer.1password.com/docs/cli/secret-references/
-[service-account]: https://developer.1password.com/docs/service-accounts/
 
 ### Usage
 
@@ -159,9 +133,8 @@ In any repo's `.devcontainer/devcontainer.json`:
 }
 ```
 
-For `gh` authentication, add the `remoteEnv` (Pattern A) or `ghTokenSecretRef` + service
-account (Pattern B) wiring from [`gh` auth via 1Password](#gh-auth-via-1password-no-host-side-credentials)
-above — Pattern A is the right default for local dev containers.
+For `gh` authentication, add the `remoteEnv` `GITHUB_TOKEN` passthrough from
+[`gh` auth via 1Password](#gh-auth-via-1password-no-host-side-credentials) above.
 
 This single line replaces the official `claude-code` and `github-cli` feature lines, the
 inline `npm install -g @openai/codex`, **and** the `.claude` volume / `CLAUDE_CONFIG_DIR` /
