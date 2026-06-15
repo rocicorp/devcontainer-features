@@ -13,18 +13,53 @@ Installs the AI coding agents we standardize on:
   `ghcr.io/anthropics/devcontainer-features/claude-code` feature)
 - **GitHub CLI** (`gh`, via `dependsOn` on the official
   `ghcr.io/devcontainers/features/github-cli` feature)
+- **1Password CLI** (`op`, installed from 1Password's apt repo) — used to inject a
+  GitHub token for `gh` without persisting credentials on the host
 
-### Persistent Claude + `gh` logins
+### Persistent Claude login
 
-The feature mounts named volumes (`devcontainer-claude-config` at `/home/node/.claude`,
-`devcontainer-gh-config` at `/home/node/.config/gh`) and sets `CLAUDE_CONFIG_DIR`, so the
-Claude and `gh auth login` sessions survive container **rebuilds** — you log in once
-instead of after every rebuild. A `postCreateCommand` `chown`s the volumes so the `node`
-user can write to them.
+The feature mounts a named volume (`devcontainer-claude-config` at `/home/node/.claude`)
+and sets `CLAUDE_CONFIG_DIR`, so the Claude session survives container **rebuilds** — you
+log in once instead of after every rebuild. A `postCreateCommand` `chown`s the volume so
+the `node` user can write to it.
 
-> The volumes are **shared across all repos** that use this feature (these logins are
+> The volume is **shared across all repos** that use this feature (the Claude login is
 > account-level, not repo-level), so logging in from one container carries over to the
-> others. The mount paths assume the `node` remote user (the base image we standardize on).
+> others. The mount path assumes the `node` remote user (the base image we standardize on).
+
+### `gh` auth via 1Password (no host-side credentials)
+
+Earlier versions persisted the `gh` login in a `devcontainer-gh-config` volume, which left
+a long-lived GitHub token sitting on the host indefinitely. As of **v2.0.0** that volume is
+gone. Instead, `gh` reads `GH_TOKEN` from a token resolved out of 1Password fresh at each
+shell start — nothing is written to the host.
+
+Set the `ghTokenSecretRef` option to a [1Password secret reference][secret-ref]
+(`op://vault/item/field`) pointing at a GitHub token, and provide an
+[`OP_SERVICE_ACCOUNT_TOKEN`][service-account] so `op` can authenticate headlessly inside
+the container:
+
+```jsonc
+"features": {
+  "ghcr.io/rocicorp/devcontainer-features/agents:2": {
+    "ghTokenSecretRef": "op://Engineering/GitHub CLI/token"
+  }
+},
+// pass the 1Password service-account token through from the host environment
+"remoteEnv": {
+  "OP_SERVICE_ACCOUNT_TOKEN": "${localEnv:OP_SERVICE_ACCOUNT_TOKEN}"
+}
+```
+
+On each (login) shell, a `/etc/profile.d/10-gh-op-token.sh` snippet runs
+`op read "$ghTokenSecretRef"` and exports the result as `GH_TOKEN`, which `gh` uses
+automatically. If `ghTokenSecretRef` is empty, `op` is unauthenticated, or the reference
+can't be resolved, the snippet is a no-op and you can fall back to `gh auth login` or set
+`GITHUB_TOKEN` yourself. Use a token with a short expiry / least-privilege scope so the
+injected credential is genuinely short-lived.
+
+[secret-ref]: https://developer.1password.com/docs/cli/secret-references/
+[service-account]: https://developer.1password.com/docs/service-accounts/
 
 ### Usage
 
@@ -32,9 +67,11 @@ In any repo's `.devcontainer/devcontainer.json`:
 
 ```jsonc
 "features": {
-  "ghcr.io/rocicorp/devcontainer-features/agents:1": {
+  "ghcr.io/rocicorp/devcontainer-features/agents:2": {
     // optional — override the pinned Codex version
-    "codexVersion": "0.139.0"
+    "codexVersion": "0.139.0",
+    // optional — 1Password secret reference for the gh token (see above)
+    "ghTokenSecretRef": "op://Engineering/GitHub CLI/token"
   }
 }
 ```
