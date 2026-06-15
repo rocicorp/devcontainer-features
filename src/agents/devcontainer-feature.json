@@ -1,14 +1,19 @@
 {
   "id": "agents",
-  "version": "1.2.0",
+  "version": "2.0.0",
   "name": "AI Coding Agents (Codex + Claude Code + GitHub CLI)",
-  "description": "Installs the OpenAI Codex CLI, Claude Code, and the GitHub CLI so every dev container ships with the agents pre-installed. Persists the Claude and `gh` logins across rebuilds via named volumes.",
+  "description": "Installs the OpenAI Codex CLI, Claude Code, the GitHub CLI, and the 1Password CLI so every dev container ships with the agents pre-installed. Persists the Claude login across rebuilds via a named volume. Authenticates `gh` by injecting a short-lived token from 1Password at shell start instead of persisting GitHub credentials on the host.",
   "documentationURL": "https://github.com/rocicorp/devcontainer-features/tree/main/src/agents",
   "options": {
     "codexVersion": {
       "type": "string",
       "default": "0.139.0",
       "description": "Version of @openai/codex to install (npm dist-tag or exact version). Pin an exact version for reproducibility."
+    },
+    "ghTokenSecretRef": {
+      "type": "string",
+      "default": "",
+      "description": "1Password secret reference (op://vault/item/field) for a GitHub token. When set, GH_TOKEN is resolved from 1Password fresh at each shell start via `op read`, so no GitHub credentials are persisted on the host. Requires `op` to be authenticated in the container (set OP_SERVICE_ACCOUNT_TOKEN). Leave empty to fall back to `gh auth login` or a GITHUB_TOKEN env var."
     }
   },
   "dependsOn": {
@@ -20,16 +25,11 @@
   },
   "mounts": [
     {
-      "source": "devcontainer-gh-config",
-      "target": "/home/node/.config/gh",
-      "type": "volume"
-    },
-    {
       "source": "devcontainer-claude-config",
       "target": "/home/node/.claude",
       "type": "volume"
     }
   ],
-  "postCreateCommand": "sudo chown -R node:node /home/node/.config/gh /home/node/.claude 2>/dev/null || true",
+  "postCreateCommand": "sudo chown -R node:node /home/node/.claude 2>/dev/null || true",
   "installsAfter": ["ghcr.io/devcontainers/features/node"]
 }
