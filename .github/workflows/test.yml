@@ -1,6 +1,7 @@
 name: Test dev container features
 
 on:
+  merge_group:
   pull_request:
   push:
     branches:
