@@ -15,6 +15,5 @@ echo "Installing @openai/codex@${CODEX_VERSION} ..."
 npm install -g "@openai/codex@${CODEX_VERSION}"
 codex --version || true
 # Claude Code is provided by the dependsOn feature (anthropics/claude-code).
-# GitHub CLI is provided by the dependsOn feature (devcontainers/github-cli).
 
 echo "Done."

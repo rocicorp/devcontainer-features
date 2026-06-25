@@ -11,10 +11,11 @@ Installs the AI coding agents we standardize on:
 - **OpenAI Codex CLI** (`@openai/codex`, version pinned via the `codexVersion` option)
 - **Claude Code** (pulled in automatically via `dependsOn` on the official
   `ghcr.io/anthropics/devcontainer-features/claude-code` feature)
-- **GitHub CLI** (`gh`, via `dependsOn` on the official
-  `ghcr.io/devcontainers/features/github-cli` feature)
-- **1Password CLI** (`op`, installed from 1Password's apt repo) — so `gh` can authenticate
-  from a 1Password-sourced token instead of persisting credentials on the host
+
+> **v3.0.0** drops the bundled GitHub CLI (`gh`) and 1Password CLI (`op`), so the container no
+> longer needs a GitHub token injected at shell start. If a repo still wants `gh`, add the
+> official [`github-cli`](https://github.com/devcontainers/features/tree/main/src/github-cli)
+> feature directly.
 
 ### Persistent Claude login
 
@@ -27,116 +28,20 @@ the `node` user can write to it.
 > account-level, not repo-level), so logging in from one container carries over to the
 > others. The mount path assumes the `node` remote user (the base image we standardize on).
 
-### `gh` auth via 1Password (no host-side credentials)
-
-Earlier versions persisted the `gh` login in a `devcontainer-gh-config` volume, which left
-a long-lived GitHub token sitting on the host indefinitely. As of **v2.0.0** that volume is
-gone. `gh` authenticates from a `GITHUB_TOKEN` **environment variable** instead, resolved
-from 1Password on your host and forwarded into the container — nothing is written to the
-host.
-
-The reason it's forwarded from the host rather than resolved inside the container:
-**1Password's desktop-app integration (Touch ID unlock) does _not_ work inside a
-container.** The `op` CLI's app integration talks to the desktop app over a host-only socket
-the container can't reach. So `op` runs on your **host**, and only the resulting token
-crosses into the container — `gh` reads `GITHUB_TOKEN` directly.
-
-```jsonc
-"features": {
-  "ghcr.io/rocicorp/devcontainer-features/agents:2": { "codexVersion": "0.139.0" }
-},
-// gh reads GITHUB_TOKEN; forward it from the host (resolved there via 1Password)
-"remoteEnv": { "GITHUB_TOKEN": "${localEnv:GITHUB_TOKEN}" }
-```
-
-One-time **host** setup (the part that tripped us up — note the gotchas):
-
-1. **Install the `op` CLI** — no package manager required. Download the macOS package or
-   the standalone universal binary from <https://1password.com/downloads/command-line>,
-   then enable **1Password app → Settings → Developer → Integrate with 1Password CLI**
-   (Touch ID). Verify with `op vault list`.
-2. **Export the token from your shell rc** — for zsh this is **`~/.zshrc`** (not `~/.zsh_rc`,
-   which zsh never sources):
-   ```bash
-   export GITHUB_TOKEN="$(op read 'op://Employee/GitHub Personal Access Token/token')"
-   ```
-   Use the item's exact [secret reference][secret-ref] — in the 1Password app, right-click
-   the field → **Copy Secret Reference**. Reload and check: `source ~/.zshrc` then
-   `echo ${#GITHUB_TOKEN}` should be non-zero.
-3. **Make the variable visible to the editor process.** `${localEnv:...}` is read from the
-   editor's *process* environment, and **GUI/Dock/Spotlight launches do _not_ read
-   `~/.zshrc`** — so a Dock-launched editor won't see `GITHUB_TOKEN`. Two ways to fix it:
-
-   - **Launch from a terminal** (scopes the variable to that editor instance). Fully quit
-     the editor first, then from a terminal where `echo ${#GITHUB_TOKEN}` is non-zero start
-     it (`code`). Best when you open a folder/workspace from the CLI.
-   - **`launchctl setenv`** (works with Dock/Spotlight launches — and with the no-checkout
-     "Clone Repository in Container Volume" flow, where you never open a folder from the
-     CLI):
-     ```bash
-     launchctl setenv GITHUB_TOKEN "$(op read 'op://Employee/GitHub Personal Access Token/token')"
-     ```
-     This puts the variable into your **GUI login session**, so anything launched afterward
-     (including a Dock-launched editor) inherits it. Caveats:
-     - **Relaunch** any already-running editor — it only picks up the value on a fresh launch.
-     - **Not persistent** — `launchctl setenv` is cleared on logout/restart; re-run it each
-       session, or automate it with a login LaunchAgent (below).
-     - **Session-wide** — it's readable by *all* GUI apps in your login session, not just the
-       editor. If you'd rather keep it scoped, use the terminal launch instead.
-
-   Then build/reopen the container and check `gh auth status`.
-
-   <details><summary>Optional: re-apply it automatically at login (LaunchAgent)</summary>
-
-   Create `~/Library/LaunchAgents/com.rocicorp.github-token.plist`:
-
-   ```xml
-   <?xml version="1.0" encoding="UTF-8"?>
-   <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-   <plist version="1.0">
-   <dict>
-     <key>Label</key><string>com.rocicorp.github-token</string>
-     <key>ProgramArguments</key>
-     <array>
-       <string>/bin/sh</string>
-       <string>-c</string>
-       <string>launchctl setenv GITHUB_TOKEN "$(/usr/local/bin/op read 'op://Employee/GitHub Personal Access Token/token')"</string>
-     </array>
-     <key>RunAtLoad</key><true/>
-   </dict>
-   </plist>
-   ```
-
-   Load it with `launchctl load ~/Library/LaunchAgents/com.rocicorp.github-token.plist`.
-   Caveat: it runs `op read` non-interactively at login, which only succeeds if 1Password can
-   authorize without a prompt (e.g. the app is unlocked / CLI integration allows it) —
-   otherwise just run the `launchctl setenv` line by hand each session.
-   </details>
-
-> Why this shape: only a short-lived *GitHub* token ever enters the container (not a
-> credential that can read your whole vault), the secret still originates in 1Password, and
-> nothing is persisted on a host volume. If `GITHUB_TOKEN` isn't set, `gh` is simply
-> unauthenticated — a clean fallback; run `gh auth login` manually if you like.
-
-[secret-ref]: https://developer.1password.com/docs/cli/secret-references/
-
 ### Usage
 
 In any repo's `.devcontainer/devcontainer.json`:
 
 ```jsonc
 "features": {
-  "ghcr.io/rocicorp/devcontainer-features/agents:2": {
+  "ghcr.io/rocicorp/devcontainer-features/agents:3": {
     // optional — override the pinned Codex version
     "codexVersion": "0.139.0"
   }
 }
 ```
 
-For `gh` authentication, add the `remoteEnv` `GITHUB_TOKEN` passthrough from
-[`gh` auth via 1Password](#gh-auth-via-1password-no-host-side-credentials) above.
-
-This single line replaces the official `claude-code` and `github-cli` feature lines, the
+This single line replaces the official `claude-code` feature line, the
 inline `npm install -g @openai/codex`, **and** the `.claude` volume / `CLAUDE_CONFIG_DIR` /
 `chown` wiring that otherwise lives in each repo's `devcontainer.json` + `post-create.sh`.
 
