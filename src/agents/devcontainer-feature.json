@@ -1,8 +1,8 @@
 {
   "id": "agents",
-  "version": "2.0.0",
-  "name": "AI Coding Agents (Codex + Claude Code + GitHub CLI)",
-  "description": "Installs the OpenAI Codex CLI, Claude Code, the GitHub CLI, and the 1Password CLI so every dev container ships with the agents pre-installed. Persists the Claude login across rebuilds via a named volume. Authenticates `gh` by injecting a short-lived token from 1Password at shell start instead of persisting GitHub credentials on the host.",
+  "version": "3.0.0",
+  "name": "AI Coding Agents (Codex + Claude Code)",
+  "description": "Installs the OpenAI Codex CLI and Claude Code so every dev container ships with the agents pre-installed. Persists the Claude login across rebuilds via a named volume.",
   "documentationURL": "https://github.com/rocicorp/devcontainer-features/tree/main/src/agents",
   "options": {
     "codexVersion": {
