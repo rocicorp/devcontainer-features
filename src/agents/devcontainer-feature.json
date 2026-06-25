@@ -9,16 +9,11 @@
       "type": "string",
       "default": "0.139.0",
       "description": "Version of @openai/codex to install (npm dist-tag or exact version). Pin an exact version for reproducibility."
-    },
-    "ghTokenSecretRef": {
-      "type": "string",
-      "default": "",
-      "description": "1Password secret reference (op://vault/item/field) for a GitHub token. When set, GH_TOKEN is resolved from 1Password fresh at each shell start via `op read`, so no GitHub credentials are persisted on the host. Requires `op` to be authenticated in the container (set OP_SERVICE_ACCOUNT_TOKEN). Leave empty to fall back to `gh auth login` or a GITHUB_TOKEN env var."
     }
+    
   },
   "dependsOn": {
-    "ghcr.io/anthropics/devcontainer-features/claude-code:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1": {}
   },
   "containerEnv": {
     "CLAUDE_CONFIG_DIR": "/home/node/.claude"
